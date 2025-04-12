@@ -147,29 +147,6 @@ class Fbxpy():
             self.update_last_use()
         return result
 
-    def register(self):
-        """
-        Register the application with the server.
-        """
-        global TOKEN, TRACK_ID
-        payload = {
-            'app_id': APP_ID,
-            'app_name': APP_NAME,
-            'app_version': APP_VERSION,
-            'device_name': DEVICE_NAME
-        }
-        content = self.connexion_post(Endpoint.LOGIN_AUTHORIZE, payload)
-        log_info(content)
-        TOKEN = str(content["result"]["app_token"])
-        TRACK_ID = str(content["result"]["track_id"])
-
-    def progress(self):
-        """
-        Get the progress of the registration process.
-        """
-        content = self.connexion_get(Endpoint.LOGIN_AUTHORIZE + TRACK_ID)
-        log_info(content)
-
     def create_session(self) -> Session:
         """
         Create a new session with the server.
