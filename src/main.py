@@ -10,7 +10,11 @@ from threading import Thread, Lock
 from typing import Optional, Dict
 from requests import Session
 from dotenv import load_dotenv
-from src.enums import Endpoint, WifiState, WifiPlanningState
+from src.enums import (
+    Endpoint,
+    WifiState,
+    WifiPlanningState
+)
 from src.logs import (
     log_info,
     log_exception,
@@ -46,19 +50,31 @@ class Fbxpy():
 
     @classmethod
     def get_instance(cls):
+        """
+        Get the singleton instance of Fbxpy.
+        """
         if cls._instance is None:
             cls._instance = Fbxpy()
         return cls._instance
     
     def update_last_use(self):
+        """
+        Update the last use time of the session.
+        """
         self.last_use = time.time()
 
     def get_session(self) -> Session:
+        """
+        Get the current session, creating it if necessary.
+        """
         if self.current_session is None:
             self.create_session()
         return self.current_session
 
     def check_time(self):
+        """
+        Check if the session is still valid and close it if not.
+        """
         can_continue = True
         
         while can_continue:
@@ -70,7 +86,12 @@ class Fbxpy():
                 self.close_session()
                 log_info("Session closed due to inactivity.")
 
-    def connexion_post(self, method: Endpoint, data: Optional[Dict] = None):
+    def connexion_post(self,
+                       method: Endpoint,
+                       data: Optional[Dict] = None):
+        """
+        Send a POST request to the server.
+        """
         url = URL_BASE + method.value
         if data:
             data = json.dumps(data)
@@ -79,24 +100,43 @@ class Fbxpy():
             self.update_last_use()
         return result
 
-    def connexion_post_without_connection(self, method: Endpoint, data: Optional[Dict] = None, session: Session = None):
+    def connexion_post_without_connection(self,
+                                          method: Endpoint,
+                                          data: Optional[Dict] = None,
+                                          session: Session = None):
+        """
+        Send a POST request to the server without using the current session.
+        """
         url = URL_BASE + method.value
         if data:
             data = json.dumps(data)
         return json.loads(session.post(url, data=data).text)
 
     def connexion_get(self, method: Endpoint):
+        """
+        Send a GET request to the server.
+        """
         url = URL_BASE + method.value
         with self.lock:
             result = json.loads(self.get_session().get(url).text)
             self.update_last_use()
         return result
 
-    def connexion_get_without_connection(self, method: Endpoint, session: Session):
+    def connexion_get_without_connection(self,
+                                         method: Endpoint,
+                                         session: Session):
+        """
+        Send a GET request to the server without using the current session.
+        """
         url = URL_BASE + method.value
         return json.loads(session.get(url).text)
 
-    def connexion_put(self, method: Endpoint, data: Optional[Dict] = None):
+    def connexion_put(self,
+                      method: Endpoint,
+                      data: Optional[Dict] = None):
+        """
+        Send a PUT request to the server.
+        """
         url = URL_BASE + method.value
         if data:
             data = json.dumps(data)
@@ -108,6 +148,9 @@ class Fbxpy():
         return result
 
     def register(self):
+        """
+        Register the application with the server.
+        """
         global TOKEN, TRACK_ID
         payload = {
             'app_id': APP_ID,
@@ -121,10 +164,16 @@ class Fbxpy():
         TRACK_ID = str(content["result"]["track_id"])
 
     def progress(self):
+        """
+        Get the progress of the registration process.
+        """
         content = self.connexion_get(Endpoint.LOGIN_AUTHORIZE + TRACK_ID)
         log_info(content)
 
     def create_session(self) -> Session:
+        """
+        Create a new session with the server.
+        """
         session = requests.session()
         session.verify = False
         challenge = str(self.connexion_get_without_connection(Endpoint.LOGIN, session)["result"]["challenge"])
@@ -145,6 +194,9 @@ class Fbxpy():
         return session
 
     def close_session(self):
+        """
+        Close the current session.
+        """
         if self.current_session is None:
             return
         
@@ -156,6 +208,9 @@ class Fbxpy():
             self.current_session = None
 
     def get_wifi_state(self) -> WifiState:
+        """
+        Get the current state of the WiFi.
+        """
         try:
             result = self.connexion_get(method=Endpoint.WIFI_AP)
             
@@ -173,6 +228,9 @@ class Fbxpy():
         return WifiState.UNKNOWN
 
     def get_wifi_planning_state(self) -> WifiPlanningState:
+        """
+        Get the current state of the WiFi planning.
+        """
         try:
             result = self.connexion_get(method=Endpoint.WIFI_PLANNING)
             
@@ -186,6 +244,9 @@ class Fbxpy():
         return WifiPlanningState.UNKNOWN
 
     def set_wifi_planning_state(self, value: bool) -> bool:
+        """
+        Set the state of the WiFi planning.
+        """
         try:
             result = self.connexion_put(Endpoint.WIFI_PLANNING,
                                         data={"use_planning": value})
@@ -199,6 +260,9 @@ class Fbxpy():
         return False
 
     def active_wifi(self) -> bool:
+        """
+        Activate the WiFi.
+        """
         result = self.connexion_put(method=Endpoint.WIFI_CONFIG,
                                     data={"enabled": True})
         
@@ -208,6 +272,9 @@ class Fbxpy():
             return False
 
     def stop_wifi(self) -> bool:
+        """
+        Stop the WiFi.
+        """
         try:
             result = self.connexion_put(method=Endpoint.WIFI_CONFIG,
                                         data={"enabled": False})
