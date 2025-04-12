@@ -156,8 +156,15 @@ class Fbxpy():
         return session
 
     def close_session(self):
-        self.connexion_post(Endpoint.LOGIN_LOGOUT)
-        self.current_session = None
+        if self.current_session is None:
+            return
+        
+        try:
+            self.connexion_post(Endpoint.LOGIN_LOGOUT)
+        except Exception as e:
+            logger.error(e)
+        finally:
+            self.current_session = None
 
     def get_wifi_state(self) -> WifiState:
         try:
@@ -226,16 +233,19 @@ class Fbxpy():
 
 singleton = Fbxpy.get_instance()
 
+# =====================================================================
 if __name__ == "__main__":
+    # Keep wifi up
     while True:
         try:
-            logger.info("Checking WiFi state...")
             # Get current datetime
             current_time = datetime.datetime.now()
             
+            logger.info(current_time.strftime("%d/%m/%Y, %H:%M:%S"))
+            
             # Check if minute is 29 or 59
             if 29 == current_time.minute % 30:
-                logger.info("Current minute is 29 or 59, checking WiFi state...")
+                logger.info("Checking WiFi state...")
                 wifi_state = singleton.get_wifi_state()
 
                 # Activate the wifi if needed
@@ -259,7 +269,17 @@ if __name__ == "__main__":
             logger.error(f"An error occurred: {e}")
         
         finally:
-            # Sleep for a minute before checking again
-            time.sleep(60)
-            singleton.create_session()
+            # Compute the number of seconds from now to the next_run_time date
+            current_time = datetime.datetime.now().replace(microsecond=0)
+            
+            if current_time.minute < 29:
+                next_run_time = current_time.replace(minute=29, second=0)
+            else:
+                next_run_time = current_time.replace(minute=59, second=0)
+            
+            seconds_until = (next_run_time - current_time).total_seconds()
+            
+            # Sleep for that duration
+            logger.info(f"Sleeping for {seconds_until} seconds until {next_run_time.strftime("%H:%M:%S")}.")
+            time.sleep(seconds_until)
             
