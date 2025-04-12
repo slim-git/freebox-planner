@@ -22,7 +22,12 @@ def _fancy_print(data, log_level=logging.INFO):
         logging.CRITICAL: logger.critical
     }.get(log_level, logger.info)
     
-    log_function(json.dumps(data, indent=2, separators=(',', ': ')))
+    try:
+        log = json.dumps(data, indent=2, separators=(',', ': '))
+    except (TypeError, ValueError):
+        log = str(data)
+    
+    log_function(log)
 
 def log_debug(data):
     _fancy_print(data, log_level=logging.DEBUG)

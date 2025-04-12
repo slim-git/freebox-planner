@@ -28,4 +28,4 @@ RUN useradd --create-home appuser
 USER appuser
 
 # CMD
-CMD ["python", "-m", "src.main"]
+CMD ["uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "7860"]

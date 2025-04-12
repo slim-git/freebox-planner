@@ -16,6 +16,7 @@ from src.enums import (
     WifiPlanningState
 )
 from src.logs import (
+    log_debug,
     log_info,
     log_exception,
     log_error,
@@ -163,6 +164,7 @@ class Fbxpy():
             "password": password
         }
         content = self.connexion_post_without_connection(Endpoint.LOGIN_SESSION, data, session)
+        log_debug(content)
         session.headers = {"X-Fbx-App-Auth": content["result"]["session_token"]}
         self.current_session = session
         self.update_last_use()

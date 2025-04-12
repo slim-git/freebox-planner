@@ -36,7 +36,7 @@ Every half hour, the check is done, eventually leading to wifi activation and/or
 ### Local launch
 From the root folder:
 ```bash
-python -m src.main
+python -m uvicorn src.api:app --host 0.0.0.0 --port 7860
 ```
 
 ### Containerized launch
