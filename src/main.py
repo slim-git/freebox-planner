@@ -6,25 +6,18 @@ import json
 import time
 import requests
 import urllib3
-import logging
 from threading import Thread, Lock
 from typing import Optional, Dict
 from requests import Session
 from dotenv import load_dotenv
 from src.enums import Endpoint, WifiState, WifiPlanningState
+from src.logs import (
+    log_info,
+    log_exception,
+    log_error,
+)
 
 load_dotenv()
-
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        # logging.FileHandler("app.log"),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
 URL_BASE = os.getenv('URL_BASE')
@@ -57,10 +50,6 @@ class Fbxpy():
             cls._instance = Fbxpy()
         return cls._instance
     
-    @classmethod
-    def fancy_print(cls, data):
-        logger.info(json.dumps(data, indent=2, separators=(',', ': ')))
-    
     def update_last_use(self):
         self.last_use = time.time()
 
@@ -79,7 +68,7 @@ class Fbxpy():
             elif (time.time() - self.last_use) >= 60:
                 can_continue = False
                 self.close_session()
-                logger.info("Session closed due to inactivity.")
+                log_info("Session closed due to inactivity.")
 
     def connexion_post(self, method: Endpoint, data: Optional[Dict] = None):
         url = URL_BASE + method.value
@@ -112,8 +101,8 @@ class Fbxpy():
         if data:
             data = json.dumps(data)
         with self.lock:
-            self.fancy_print(url)
-            self.fancy_print(data)
+            log_info(url)
+            log_info(data)
             result = json.loads(self.get_session().put(url, data=data).text)
             self.update_last_use()
         return result
@@ -127,13 +116,13 @@ class Fbxpy():
             'device_name': DEVICE_NAME
         }
         content = self.connexion_post(Endpoint.LOGIN_AUTHORIZE, payload)
-        self.fancy_print(content)
+        log_info(content)
         TOKEN = str(content["result"]["app_token"])
         TRACK_ID = str(content["result"]["track_id"])
 
     def progress(self):
         content = self.connexion_get(Endpoint.LOGIN_AUTHORIZE + TRACK_ID)
-        self.fancy_print(content)
+        log_info(content)
 
     def create_session(self) -> Session:
         session = requests.session()
@@ -162,7 +151,7 @@ class Fbxpy():
         try:
             self.connexion_post(Endpoint.LOGIN_LOGOUT)
         except Exception as e:
-            logger.error(e)
+            log_exception(e)
         finally:
             self.current_session = None
 
@@ -179,7 +168,7 @@ class Fbxpy():
                     return WifiState.ACTIVE
         
         except Exception as e:
-            logger.error(e)
+            log_exception(e)
         
         return WifiState.UNKNOWN
 
@@ -192,7 +181,7 @@ class Fbxpy():
             else:
                 return WifiPlanningState.FALSE
         except Exception as e:
-            logger.error(e)
+            log_exception(e)
         
         return WifiPlanningState.UNKNOWN
 
@@ -205,7 +194,7 @@ class Fbxpy():
                 return True
         
         except Exception as e:
-            logger.error(e)
+            log_exception(e)
         
         return False
 
@@ -227,7 +216,7 @@ class Fbxpy():
                 return True
         
         except Exception as e:
-            logger.error(e)
+            log_exception(e)
         
         return False
 
@@ -241,32 +230,32 @@ if __name__ == "__main__":
             # Get current datetime
             current_time = datetime.datetime.now()
             
-            logger.info(current_time.strftime("%d/%m/%Y, %H:%M:%S"))
+            log_info(current_time.strftime("%d/%m/%Y, %H:%M:%S"))
             
             # Check if minute is 29 or 59
             if 29 == current_time.minute % 30:
-                logger.info("Checking WiFi state...")
+                log_info("Checking WiFi state...")
                 wifi_state = singleton.get_wifi_state()
 
                 # Activate the wifi if needed
                 if wifi_state == WifiState.INACTIVE:
-                    logger.info("WiFi is inactive, trying to activate...")
+                    log_info("WiFi is inactive, trying to activate...")
                     if singleton.active_wifi():
-                        logger.info("WiFi activated successfully.")
+                        log_info("WiFi activated successfully.")
                     else:
-                        logger.error("Failed to activate WiFi.")
+                        log_error("Failed to activate WiFi.")
                 
                 # Check the planning state and disable it if needed
                 if singleton.get_wifi_planning_state() == WifiPlanningState.TRUE:
-                    logger.info("WiFi planning is active, trying to disable...")
+                    log_info("WiFi planning is active, trying to disable...")
                     
                     if singleton.set_wifi_planning_state(False):
-                        logger.info("WiFi planning disabled successfully.")
+                        log_info("WiFi planning disabled successfully.")
                     else:
-                        logger.error("Failed to disable WiFi planning.")
+                        log_error("Failed to disable WiFi planning.")
         
         except Exception as e:
-            logger.error(f"An error occurred: {e}")
+            log_exception(f"An error occurred: {e}")
         
         finally:
             # Compute the number of seconds from now to the next_run_time date
@@ -280,6 +269,6 @@ if __name__ == "__main__":
             seconds_until = (next_run_time - current_time).total_seconds()
             
             # Sleep for that duration
-            logger.info(f"Sleeping for {seconds_until} seconds until {next_run_time.strftime("%H:%M:%S")}.")
+            log_info(f"Sleeping for {seconds_until} seconds until {next_run_time.strftime("%H:%M:%S")}.")
             time.sleep(seconds_until)
             
