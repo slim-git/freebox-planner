@@ -21,6 +21,8 @@ WORKDIR /app
 
 ENV PYTHONPATH=/app
 
+EXPOSE 7860
+
 # Create a non-root user 'appuser' and switch to this user
 RUN useradd --create-home appuser
 USER appuser
