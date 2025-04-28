@@ -3,6 +3,9 @@ from enum import Enum
 class WifiState(Enum):
     ACTIVE = "active"
     INACTIVE = "inactive"
+    DISABLED = "disabled"
+    DISABLED_PLANNING = "disabled_planning"
+    FAILED = "failed"
     UNKNOWN = "unknown"
     ACTIVE_PLANIF = "active_planif"
 
