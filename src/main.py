@@ -18,6 +18,7 @@ from src.enums import (
 from src.logs import (
     log_debug,
     log_info,
+    log_warning,
     log_exception,
     log_error,
 )
@@ -199,10 +200,13 @@ class Fbxpy():
             
                 if state == WifiState.ACTIVE:
                     if self.get_wifi_planning_state() == WifiPlanningState.TRUE:
+                        log_info("WiFi is active with planning.")
                         return WifiState.ACTIVE_PLANIF
                     else:
+                        log_info("WiFi is active without planning.")
                         return WifiState.ACTIVE
                 elif state in [WifiState.INACTIVE, WifiState.DISABLED]:
+                    log_warning("WiFi is inactive or disabled.")
                     return WifiState.INACTIVE
         
         except Exception as e:
@@ -272,37 +276,42 @@ class Fbxpy():
 
 singleton = Fbxpy.get_instance()
 
+def check_wifi_state(bypass_check_time: bool = False):
+    # Get current datetime
+    current_time = datetime.datetime.now()
+    
+    log_info(current_time.strftime("%d/%m/%Y, %H:%M:%S"))
+    
+    # Check if minute is 29 or 59
+    if bypass_check_time or 29 == current_time.minute % 30:
+        log_info("Checking WiFi state...")
+        wifi_state = singleton.get_wifi_state()
+
+        # Activate the wifi if needed
+        if wifi_state == WifiState.INACTIVE:
+            log_info("WiFi is inactive, trying to activate...")
+            if singleton.activate_wifi():
+                log_info("WiFi activated successfully.")
+            else:
+                log_error("Failed to activate WiFi.")
+        
+        # Check the planning state and disable it if needed
+        if singleton.get_wifi_planning_state() == WifiPlanningState.TRUE:
+            log_info("WiFi planning is active, trying to disable...")
+            
+            if singleton.set_wifi_planning_state(False):
+                log_info("WiFi planning disabled successfully.")
+            else:
+                log_error("Failed to disable WiFi planning.")
+
 # =====================================================================
 if __name__ == "__main__":
+    check_wifi_state(bypass_check_time=True)
+
     # Keep wifi up
     while True:
         try:
-            # Get current datetime
-            current_time = datetime.datetime.now()
-            
-            log_info(current_time.strftime("%d/%m/%Y, %H:%M:%S"))
-            
-            # Check if minute is 29 or 59
-            if 29 == current_time.minute % 30:
-                log_info("Checking WiFi state...")
-                wifi_state = singleton.get_wifi_state()
-
-                # Activate the wifi if needed
-                if wifi_state == WifiState.INACTIVE:
-                    log_info("WiFi is inactive, trying to activate...")
-                    if singleton.activate_wifi():
-                        log_info("WiFi activated successfully.")
-                    else:
-                        log_error("Failed to activate WiFi.")
-                
-                # Check the planning state and disable it if needed
-                if singleton.get_wifi_planning_state() == WifiPlanningState.TRUE:
-                    log_info("WiFi planning is active, trying to disable...")
-                    
-                    if singleton.set_wifi_planning_state(False):
-                        log_info("WiFi planning disabled successfully.")
-                    else:
-                        log_error("Failed to disable WiFi planning.")
+            check_wifi_state()
         
         except Exception as e:
             log_exception(f"An error occurred: {e}")
