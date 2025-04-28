@@ -193,13 +193,19 @@ class Fbxpy():
         try:
             result = self.connexion_get(method=Endpoint.WIFI_AP)
             
-            state = WifiState.get_by_value(result["result"][0]["status"]["state"])
+            # Loop over the access points
+            for ap in result["result"]:
+                state = WifiState.get_by_value(ap["status"]["state"])
+                print(f'{ap["status"]["state"]}')
+                print(f"State: {state}")
             
-            if state == WifiState.ACTIVE:
-                if self.get_wifi_planning_state() == WifiPlanningState.TRUE:
-                    return WifiState.ACTIVE_PLANIF
-                else:
-                    return WifiState.ACTIVE
+                if state == WifiState.ACTIVE:
+                    if self.get_wifi_planning_state() == WifiPlanningState.TRUE:
+                        return WifiState.ACTIVE_PLANIF
+                    else:
+                        return WifiState.ACTIVE
+                elif state in [WifiState.INACTIVE, WifiState.DISABLED]:
+                    return WifiState.INACTIVE
         
         except Exception as e:
             log_exception(e)
@@ -238,7 +244,7 @@ class Fbxpy():
         
         return False
 
-    def active_wifi(self) -> bool:
+    def activate_wifi(self) -> bool:
         """
         Activate the WiFi.
         """
@@ -286,7 +292,7 @@ if __name__ == "__main__":
                 # Activate the wifi if needed
                 if wifi_state == WifiState.INACTIVE:
                     log_info("WiFi is inactive, trying to activate...")
-                    if singleton.active_wifi():
+                    if singleton.activate_wifi():
                         log_info("WiFi activated successfully.")
                     else:
                         log_error("Failed to activate WiFi.")

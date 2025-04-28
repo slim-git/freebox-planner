@@ -77,7 +77,7 @@ def enable_wifi():
     # Activate the wifi if needed
     if wifi_state == WifiState.INACTIVE:
         log_info("WiFi is inactive, trying to activate...")
-        if fbxpy.active_wifi():
+        if fbxpy.activate_wifi():
             log_info("WiFi activated successfully.")
         else:
             log_error("Failed to activate WiFi.")
