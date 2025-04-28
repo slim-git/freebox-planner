@@ -196,8 +196,6 @@ class Fbxpy():
             # Loop over the access points
             for ap in result["result"]:
                 state = WifiState.get_by_value(ap["status"]["state"])
-                print(f'{ap["status"]["state"]}')
-                print(f"State: {state}")
             
                 if state == WifiState.ACTIVE:
                     if self.get_wifi_planning_state() == WifiPlanningState.TRUE:
