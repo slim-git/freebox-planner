@@ -30,19 +30,14 @@ def health_check():
 
 @app.get("/wifi")
 def wifi_check():
-    return enable_wifi()
+    return enable_wifi(bypass_check_time=True)
 
 def wifi_check_loop():
+    enable_wifi(bypass_check_time=True)
+    
     while True:
         try:
-            # Get current datetime
-            current_time = datetime.now()
-            
-            log_info(current_time.strftime("%d/%m/%Y, %H:%M:%S"))
-            
-            # Check if minute is 29 or 59
-            if 29 == current_time.minute % 30:
-                enable_wifi()
+            enable_wifi(bypass_check_time=False)
         
         except Exception as e:
             log_exception(f"An error occurred: {e}")
@@ -64,34 +59,41 @@ def wifi_check_loop():
             log_info(f"Sleeping for {seconds_until} seconds until {next_run_time.strftime("%H:%M:%S")}.")
             time.sleep(seconds_until)
 
-def enable_wifi():
+def enable_wifi(bypass_check_time: bool = False):
     """
     Check the WiFi state and planning state.
     If the WiFi is inactive, activate it.
     If the WiFi planning is active, disable it.
     """
-    fbxpy = Fbxpy()
-    log_info("Checking WiFi state...")
-    wifi_state = fbxpy.get_wifi_state()
+    # Get current datetime
+    current_time = datetime.now()
+    
+    log_info(current_time.strftime("%d/%m/%Y, %H:%M:%S"))
+    
+    # Check if minute is 29 or 59
+    if bypass_check_time or 29 == current_time.minute % 30:
+        fbxpy = Fbxpy()
+        log_info("Checking WiFi state...")
+        wifi_state = fbxpy.get_wifi_state()
 
-    # Activate the wifi if needed
-    if wifi_state == WifiState.INACTIVE:
-        log_info("WiFi is inactive, trying to activate...")
-        if fbxpy.activate_wifi():
-            log_info("WiFi activated successfully.")
-        else:
-            log_error("Failed to activate WiFi.")
-    
-    # Check the planning state and disable it if needed
-    if fbxpy.get_wifi_planning_state() == WifiPlanningState.TRUE:
-        log_info("WiFi planning is active, trying to disable...")
+        # Activate the wifi if needed
+        if wifi_state == WifiState.INACTIVE:
+            log_info("WiFi is inactive, trying to activate...")
+            if fbxpy.activate_wifi():
+                log_info("WiFi activated successfully.")
+            else:
+                log_error("Failed to activate WiFi.")
         
-        if fbxpy.set_wifi_planning_state(False):
-            log_info("WiFi planning disabled successfully.")
-        else:
-            log_error("Failed to disable WiFi planning.")
-    
-    return {
-        "wifi_state": wifi_state,
-        "wifi_planning_state": fbxpy.get_wifi_planning_state()
-    }
+        # Check the planning state and disable it if needed
+        if fbxpy.get_wifi_planning_state() == WifiPlanningState.TRUE:
+            log_info("WiFi planning is active, trying to disable...")
+            
+            if fbxpy.set_wifi_planning_state(False):
+                log_info("WiFi planning disabled successfully.")
+            else:
+                log_error("Failed to disable WiFi planning.")
+        
+        return {
+            "wifi_state": wifi_state,
+            "wifi_planning_state": fbxpy.get_wifi_planning_state()
+        }
