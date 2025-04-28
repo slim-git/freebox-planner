@@ -14,6 +14,8 @@ Check out the configuration reference at https://huggingface.co/docs/hub/spaces-
 Small app ensuring the Freebox wifi stays up, even when someone daily activates the planification.
 It is based on [the previous work of Clément Caillaud.](https://domotique.blog.zastron.fr/pilotage-de-la-freebox-revolution-en-python/)
 
+[More info about the API.](https://dev.freebox.fr/sdk/os/wifi/#)
+
 ## Requirements
 The app is containerized and intended to run on Huggingface.
 Thus, it requires to [enable external access to the freebox.](https://assistance.free.fr/articles/329)
